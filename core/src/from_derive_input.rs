@@ -1,6 +1,9 @@
 use syn::DeriveInput;
 
-use crate::Result;
+use crate::{
+    documented::{DocsImports, DocsModule},
+    Result,
+};
 
 /// Creates an instance by parsing an entire proc-macro `derive` input,
 /// including the, identity, generics, and visibility of the type.
@@ -11,6 +14,14 @@ use crate::Result;
 pub trait FromDeriveInput: Sized {
     /// Create an instance from `syn::DeriveInput`, or return an error.
     fn from_derive_input(input: &DeriveInput) -> Result<Self>;
+
+    fn docs_imports(&self) -> DocsImports {
+        DocsImports::none()
+    }
+
+    fn docs_module() -> Option<DocsModule> {
+        None
+    }
 }
 
 impl FromDeriveInput for () {

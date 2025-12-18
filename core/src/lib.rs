@@ -9,6 +9,7 @@ extern crate proc_macro;
 mod macros_private;
 #[macro_use]
 mod macros_public;
+mod documented;
 
 pub mod ast;
 pub(crate) mod codegen;
