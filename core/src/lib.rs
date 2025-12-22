@@ -11,6 +11,10 @@ mod macros_private;
 mod macros_public;
 mod documented;
 
+pub use documented::DocsMod;
+pub use documented::DocsUses;
+pub use documented::Documented;
+
 pub mod ast;
 pub(crate) mod codegen;
 pub mod derive;
@@ -38,6 +42,8 @@ pub use self::from_type_param::FromTypeParam;
 pub use self::from_variant::FromVariant;
 
 // Re-exports
+#[doc(hidden)]
+pub use proc_macro2;
 #[doc(hidden)]
 pub use quote::ToTokens;
 #[doc(hidden)]

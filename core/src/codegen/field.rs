@@ -21,17 +21,25 @@ pub struct Field<'a> {
 
     /// The type of the field in the input.
     pub ty: &'a Type,
+    /// Default expression to use when deserializing, if the field is not present
     pub default_expression: Option<DefaultExpression<'a>>,
     /// An expression that will be wrapped in a call to [`core::convert::identity`] and
     /// then used for converting a provided value into the field value _before_ postfix
     /// transforms are called.
     pub with_callable: Cow<'a, syn::Expr>,
+    /// Transform `darling::Result<T>` by calling `.and_then(f)` or `.map(f)` with `f` being user-provided
     pub post_transform: Option<&'a PostfixTransform>,
+    /// If `#[darling(skip)]` was present, then this field will be ignored during parsing
     pub skip: bool,
+    /// This field is allowed to appear multiple times, i.e. `baz` `#[foo(baz = 1, baz = 2, baz = 4)]`
+    ///
+    /// Declared via `#[darling(multiple)]` on a `Vec`
     pub multiple: bool,
     /// If set, this field will be given all unclaimed meta items and will
     /// not be exposed as a standard named field.
     pub flatten: bool,
+    /// Documentation comments `///` on the field
+    pub docs: &'a [String],
 }
 
 impl<'a> Field<'a> {

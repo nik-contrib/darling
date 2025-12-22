@@ -21,6 +21,7 @@ pub struct InputField {
     pub post_transform: Option<codegen::PostfixTransform>,
     pub multiple: Option<bool>,
     pub flatten: Flag,
+    pub docs: Vec<String>,
 }
 
 impl InputField {
@@ -46,6 +47,7 @@ impl InputField {
             post_transform: self.post_transform.as_ref(),
             multiple: self.multiple.unwrap_or_default(),
             flatten: self.flatten.is_present(),
+            docs: self.docs.as_slice(),
         }
     }
 
@@ -72,6 +74,7 @@ impl InputField {
             post_transform: Default::default(),
             multiple: None,
             flatten: Default::default(),
+            docs: Default::default(),
         }
     }
 
@@ -126,6 +129,10 @@ impl InputField {
 }
 
 impl ParseAttribute for InputField {
+    fn add_doc(&mut self, doc: String) {
+        self.docs.push(doc);
+    }
+
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()> {
         let path = mi.path();
 

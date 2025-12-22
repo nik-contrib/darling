@@ -41,6 +41,8 @@ pub struct Core {
 
     /// Whether or not unknown fields should produce an error at compilation time.
     pub allow_unknown_fields: Option<bool>,
+
+    pub docs: Vec<String>,
 }
 
 impl Core {
@@ -61,6 +63,7 @@ impl Core {
             post_transform: Default::default(),
             bound: Default::default(),
             allow_unknown_fields: Default::default(),
+            docs: Default::default(),
         })
     }
 
@@ -81,6 +84,10 @@ impl Core {
 }
 
 impl ParseAttribute for Core {
+    fn add_doc(&mut self, doc: String) {
+        self.docs.push(doc);
+    }
+
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()> {
         let path = mi.path();
 
@@ -194,6 +201,7 @@ impl<'a> From<&'a Core> for codegen::TraitImpl<'a> {
             default: v.as_codegen_default(),
             post_transform: v.post_transform.as_ref(),
             allow_unknown_fields: v.allow_unknown_fields.unwrap_or_default(),
+            docs: v.docs.as_slice(),
         }
     }
 }

@@ -78,6 +78,14 @@ pub trait ParseAttribute: Sized {
         for attr in attrs {
             if attr.meta.path() == &parse_quote!(darling) {
                 errors.handle(parse_attr(attr, &mut self));
+            } else if attr.meta.path().is_ident("doc") {
+                if let Ok(nv) = attr.meta.require_name_value() {
+                    if let syn::Expr::Lit(lit) = &nv.value {
+                        if let syn::Lit::Str(doc) = &lit.lit {
+                            self.add_doc(doc.value());
+                        }
+                    }
+                }
             }
         }
 
@@ -86,6 +94,8 @@ pub trait ParseAttribute: Sized {
 
     /// Read a meta-item, and apply its values to the current instance.
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()>;
+
+    fn add_doc(&mut self, doc: String) {}
 }
 
 fn parse_attr<T: ParseAttribute>(attr: &syn::Attribute, target: &mut T) -> Result<()> {

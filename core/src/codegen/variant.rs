@@ -27,6 +27,8 @@ pub struct Variant<'a> {
     pub skip: bool,
 
     pub allow_unknown_fields: bool,
+
+    pub docs: &'a [String],
 }
 
 impl<'a> Variant<'a> {

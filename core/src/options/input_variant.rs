@@ -17,6 +17,7 @@ pub struct InputVariant {
     pub word: Option<SpannedValue<bool>>,
     /// Whether or not unknown fields are acceptable in this
     allow_unknown_fields: Option<bool>,
+    pub docs: Vec<String>,
 }
 
 impl InputVariant {
@@ -39,6 +40,7 @@ impl InputVariant {
             data: self.data.as_ref().map(InputField::as_codegen_field),
             skip: self.is_skipped(),
             allow_unknown_fields: self.allow_unknown_fields.unwrap_or_default(),
+            docs: self.docs.as_slice(),
         }
     }
 
@@ -50,6 +52,7 @@ impl InputVariant {
             skip: Default::default(),
             word: Default::default(),
             allow_unknown_fields: None,
+            docs: Default::default(),
         })
         .parse_attributes(&v.attrs)?;
 
@@ -94,6 +97,10 @@ impl InputVariant {
 }
 
 impl ParseAttribute for InputVariant {
+    fn add_doc(&mut self, doc: String) {
+        self.docs.push(doc);
+    }
+
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()> {
         let path = mi.path();
         if path.is_ident("rename") {

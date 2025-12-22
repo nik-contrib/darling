@@ -15,9 +15,8 @@ pub enum DefaultExpression<'a> {
     Inherit(&'a Ident),
     /// `default = path::to::function` or `default = || default_val()`.
     Explicit(&'a Callable),
-    Trait {
-        span: Span,
-    },
+    /// Default value is `Default::default()`
+    Trait { span: Span },
 }
 
 impl<'a> DefaultExpression<'a> {

@@ -30,6 +30,7 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let ty_ident = self.base.ident;
         let input = self.param_name();
         let post_transform = self.base.post_transform_call();
+        let docs = self.base.docs;
 
         if let Data::Struct(ref data) = self.base.data {
             if data.is_newtype() {
@@ -119,6 +120,8 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let require_fields = self.base.require_fields();
         let check_errors = self.base.check_errors();
 
+        let ty_ident_string = ty_ident.to_string();
+
         self.wrap(
             quote! {
                 fn from_derive_input(#input: &::darling::export::syn::DeriveInput) -> ::darling::Result<Self> {
@@ -144,6 +147,24 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                         #pass_data_to_receiver
                         #inits
                     }) #post_transform
+                }
+
+                fn docs_mod() -> ::darling::export::Option<::darling::DocsMod> {
+                    ::darling::export::Some(::darling::DocsMod {
+                        docs: ::darling::export::Vec::from([
+                            #(::darling::export::String::from(#docs),)*
+                        ]),
+                        name: ::darling::export::syn::Ident::new(
+                            #ty_ident_string,
+                            ::darling::export::Span::call_site()
+                        ),
+                        children: ::darling::export::Vec::new()
+                    })
+                }
+
+                fn docs_uses(&self) -> ::darling::DocsUses {
+                    let mut docs_uses = ::darling::DocsUses::new(#ty_ident_string);
+                    docs_uses
                 }
             },
             tokens,

@@ -1,51 +1,92 @@
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
-use syn::{Ident, ItemUse};
+use std::fmt::{self, Write};
+use syn::{parse_quote, Ident, ItemUse};
 
 use crate::FromDeriveInput;
 
-pub struct DocsModule {
-    /// A list off `///` comments
-    docs: Vec<String>,
+pub struct DocsMod {
+    /// A list of `///` comments
+    pub docs: Vec<String>,
     /// Name of the `mod`, e.g. `mod name`
-    name: Ident,
+    pub name: Ident,
     /// Children modules, each with documentation attached
-    children: Vec<DocsModule>,
+    pub children: Vec<DocsMod>,
 }
 
-pub struct DocsImports(Vec<syn::Path>);
+/// Creates the `mod` containing documentation comments attached, and
+/// all children modules
+impl fmt::Display for DocsMod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for doc in &self.docs {
+            writeln!(f, "/// {doc}")?;
+        }
 
-impl DocsImports {
-    pub fn none() -> Self {
-        Self(Vec::new())
+        writeln!(f, "mod {} {{", self.name)?;
+
+        let children_len = self.children.len();
+        for (i, child) in self.children.iter().enumerate() {
+            for line in child.to_string().lines() {
+                if !line.is_empty() {
+                    // with an extra level of indentation
+                    writeln!(f, "    {line}")?;
+                }
+            }
+
+            // Skip adding a newline at the end
+            if i + 1 != children_len {
+                writeln!(f)?;
+            }
+        }
+
+        writeln!(f, "}}")?;
+
+        Ok(())
     }
 }
 
-impl ToTokens for DocsImports {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        let docs = &self.0;
-        tokens.append_all([quote! {
-            const _: () = {
-                use #(#docs)* as _;
-            };
-        }]);
+/// Call `.generate(syn::parse_quote!(...))`, where `...` is the path where the top-level [`DocsMod`] lives
+/// and then output that as part of your macro's final output `TokenStream`
+#[derive(Default)]
+pub struct DocsUses(Vec<syn::Path>);
+
+impl Extend<DocsUses> for DocsUses {
+    fn extend<T: IntoIterator<Item = DocsUses>>(&mut self, iter: T) {
+        for i in iter {
+            self.0.extend(i.0);
+        }
     }
 }
 
+impl DocsUses {
+    pub fn new(path: &'static str) -> Self {
+        let ident = syn::Ident::new(path, Span::call_site());
+        Self(Vec::from([parse_quote!(#ident)]))
+    }
+
+    pub fn generate(self, root: syn::Path) -> TokenStream {
+        let paths = &self.0;
+        let root = &root;
+        quote! {
+            #(use #root::#paths as _)*
+        }
+    }
+}
+
+/// A `T` and its documentation imports
 pub struct Documented<T> {
-    item: T,
+    /// Any item that can have documentation attached
+    pub item: T,
     /// Documentation for `item`
-    docs: DocsImports,
-}
-
-impl<T: ToTokens> ToTokens for Documented<T> {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        tokens.append_all([&self.item]);
-        self.docs.to_tokens(tokens);
-    }
+    pub docs: DocsUses,
 }
 
 impl<T: FromDeriveInput> FromDeriveInput for Documented<T> {
     fn from_derive_input(input: &syn::DeriveInput) -> crate::Result<Self> {
-        Ok(T::from_derive_input(input))
+        let item = T::from_derive_input(input)?;
+        Ok(Documented {
+            docs: item.docs_uses(),
+            item,
+        })
     }
 }
