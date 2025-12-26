@@ -220,6 +220,18 @@ impl<T> Fields<T> {
         self.style == Style::Tuple && self.len() == 1
     }
 
+    /// Returns the
+    pub fn as_newtype(&self) -> Option<&T> {
+        if !self.is_newtype() {
+            return None;
+        }
+        let inner = self
+            .fields
+            .first()
+            .expect("Newtype should have exactly one field");
+        Some(inner)
+    }
+
     pub fn is_unit(&self) -> bool {
         self.style.is_unit()
     }

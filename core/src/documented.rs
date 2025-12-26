@@ -14,6 +14,16 @@ pub struct DocsMod {
     pub children: Vec<DocsMod>,
 }
 
+impl DocsMod {
+    pub fn new(name: &'static str) -> Self {
+        Self {
+            docs: Vec::new(),
+            name: Ident::new(name, Span::call_site()),
+            children: Vec::new(),
+        }
+    }
+}
+
 /// Creates the `mod` containing documentation comments attached, and
 /// all children modules
 impl fmt::Display for DocsMod {
@@ -22,12 +32,23 @@ impl fmt::Display for DocsMod {
             writeln!(f, "///{doc}")?;
         }
 
-        writeln!(f, "mod {} {{", self.name)?;
+        write!(f, "pub mod {} {{", self.name)?;
+
+        if self.children.is_empty() {
+            // no children, close to make it `mod foo {}`
+            writeln!(f, "}}")?;
+            return Ok(());
+        } else {
+            writeln!(f)?;
+        }
 
         let children_len = self.children.len();
         for (i, child) in self.children.iter().enumerate() {
             for line in child.to_string().lines() {
-                if !line.is_empty() {
+                if line.is_empty() {
+                    // with an extra level of indentation
+                    writeln!(f)?;
+                } else {
                     // with an extra level of indentation
                     writeln!(f, "    {line}")?;
                 }

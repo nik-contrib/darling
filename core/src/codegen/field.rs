@@ -77,6 +77,10 @@ impl<'a> Field<'a> {
         Initializer(self)
     }
 
+    pub fn as_docs_mod(&'a self) -> DocsMod<'a> {
+        DocsMod(self)
+    }
+
     pub fn as_presence_check(&'a self) -> CheckMissing<'a> {
         CheckMissing(self)
     }
@@ -278,5 +282,39 @@ impl ToTokens for CheckMissing<'_> {
                 }
             })
         }
+    }
+}
+
+/// Generates module documentation for the field
+pub struct DocsMod<'a>(&'a Field<'a>);
+
+impl ToTokens for DocsMod<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        // Skipped and flattened fields cannot be populated by a meta
+        // with their name, so they do not generate doc module
+        if self.0.skip || self.0.flatten {
+            return;
+        }
+
+        let name = &self.0.name_in_attr;
+        let docs = &self.0.docs;
+        let ty = &self.0.ty;
+        let children = if self.0.multiple {
+            quote!(<<#ty as IntoIterator>::Item as ::darling::FromMeta>::docs_mods())
+        } else {
+            quote!(<#ty as ::darling::FromMeta>::docs_mods())
+        };
+        tokens.append_all(quote!(
+            ::darling::DocsMod {
+                docs: ::darling::export::Vec::from([
+                    #(::darling::export::String::from(#docs),)*
+                ]),
+                name: ::darling::export::syn::Ident::new(
+                    #name,
+                    ::darling::export::Span::call_site()
+                ),
+                children: #children
+            },
+        ));
     }
 }

@@ -132,6 +132,10 @@ impl<'a> TraitImpl<'a> {
         self.make_field_ctx().initializers()
     }
 
+    pub(in crate::codegen) fn docs_mod(&self) -> TokenStream {
+        self.make_field_ctx().docs_mod()
+    }
+
     /// Generate the loop which walks meta items looking for property matches.
     pub(in crate::codegen) fn core_loop(&self) -> TokenStream {
         self.make_field_ctx().core_loop()

@@ -96,6 +96,13 @@ impl<'a> FieldsGen<'a> {
         }
     }
 
+    pub(in crate::codegen) fn docs_mod(&self) -> TokenStream {
+        let inits = self.fields.as_ref().map(Field::as_docs_mod);
+        let inits = inits.iter();
+
+        quote!(#(#inits)*)
+    }
+
     pub(in crate::codegen) fn initializers(&self) -> TokenStream {
         let inits = self.fields.as_ref().map(Field::as_initializer);
         let inits = inits.iter();

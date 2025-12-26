@@ -43,6 +43,10 @@ impl<'a> Variant<'a> {
     pub fn as_data_match_arm(&'a self) -> DataMatchArm<'a> {
         DataMatchArm(self)
     }
+
+    pub fn as_docs_mod(&'a self) -> DocsMod<'a> {
+        DocsMod(self)
+    }
 }
 
 impl UsesTypeParams for Variant<'_> {
@@ -83,12 +87,7 @@ impl ToTokens for UnitMatchArm<'_> {
             tokens.append_all(quote!(
                 #name_in_attr => ::darling::export::Ok(#ty_ident::#variant_ident),
             ));
-        } else if val.data.is_newtype() {
-            let field = val
-                .data
-                .fields
-                .first()
-                .expect("Newtype should have exactly one field");
+        } else if let Some(field) = val.data.as_newtype() {
             let field_ty = field.ty;
             let ty_ident = val.ty_ident;
             let variant_ident = val.variant_ident;
@@ -191,5 +190,48 @@ impl ToTokens for DataMatchArm<'_> {
         } else {
             panic!("Match arms aren't supported for tuple variants yet");
         }
+    }
+}
+
+/// Code generator for an enum variant in a data-carrying match position.
+/// This is placed in generated `from_list` calls for the parent enum.
+/// Unit variants wrapped in this type will emit code to produce an "unsupported format" error.
+pub struct DocsMod<'a>(&'a Variant<'a>);
+
+impl ToTokens for DocsMod<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let val: &Variant<'_> = self.0;
+
+        if val.skip {
+            return;
+        }
+
+        let name = &val.name_in_attr;
+        let docs = &val.docs;
+        let children = if val.data.is_empty() {
+            quote! { ::darling::export::Vec::new() }
+        } else if let Some(inner) = val.data.as_newtype() {
+            let ty = &inner.ty;
+            quote! { <#ty as ::darling::FromMeta>::docs_mods() }
+        } else if val.data.is_struct() {
+            let vdg = FieldsGen::new(&val.data, val.allow_unknown_fields);
+            let docs_mod = vdg.docs_mod();
+            quote! { ::darling::export::Vec::from([#docs_mod]) }
+        } else {
+            unreachable!()
+        };
+
+        tokens.append_all(quote!(
+            ::darling::DocsMod {
+                docs: ::darling::export::Vec::from([
+                    #(::darling::export::String::from(#docs),)*
+                ]),
+                name: ::darling::export::syn::Ident::new(
+                    #name,
+                    ::darling::export::Span::call_site()
+                ),
+                children: #children
+            },
+        ));
     }
 }

@@ -68,6 +68,10 @@ impl ToTokens for FromMetaImpl<'_> {
                             .map_err(|e| e.with_span(&__item))
                             .map(#ty_ident)
                     }
+
+                    fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
+                        <Self as ::darling::FromMeta>::docs_mods()
+                    }
                 )
             }
             Data::Struct(Fields {
@@ -78,6 +82,7 @@ impl ToTokens for FromMetaImpl<'_> {
             }
             Data::Struct(ref data) => {
                 let inits = data.fields.iter().map(Field::as_initializer);
+                let docs_mod = data.fields.iter().map(Field::as_docs_mod);
                 let declare_errors = base.declare_errors();
                 let require_fields = base.require_fields();
                 let check_errors = base.check_errors();
@@ -111,6 +116,12 @@ impl ToTokens for FromMetaImpl<'_> {
                             #(#inits),*
                         }) #post_transform
                     }
+
+                    fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
+                        ::darling::export::Vec::from([
+                            #(#docs_mod)*
+                        ])
+                    }
                 )
             }
             Data::Enum(ref variants) => {
@@ -137,6 +148,7 @@ impl ToTokens for FromMetaImpl<'_> {
                 };
 
                 let data_variants = variants.iter().map(Variant::as_data_match_arm);
+                let docs_mod = variants.iter().map(Variant::as_docs_mod);
 
                 quote!(
                     fn from_list(__outer: &[::darling::export::NestedMeta]) -> ::darling::Result<Self> {
@@ -163,6 +175,12 @@ impl ToTokens for FromMetaImpl<'_> {
                             #(#unit_arms)*
                             __other => ::darling::export::Err(::darling::Error::#unknown_unit_variant_err)
                         }
+                    }
+
+                    fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
+                        ::darling::export::Vec::from([
+                            #(#docs_mod)*
+                        ])
                     }
 
                     #from_word

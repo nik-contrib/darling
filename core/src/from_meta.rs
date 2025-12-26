@@ -13,7 +13,7 @@ use syn::{Expr, Lit, Meta};
 
 use crate::ast::NestedMeta;
 use crate::util::path_to_string;
-use crate::{Error, Result};
+use crate::{DocsMod, Error, Result};
 
 /// Create an instance from an item in an attribute declaration.
 ///
@@ -50,6 +50,9 @@ use crate::{Error, Result};
 /// ## `Result<T, darling::Error>`
 /// * Allows for fallible parsing; will populate the target field with the result of the
 ///   parse attempt.
+#[diagnostic::on_unimplemented(
+    note = "if this implements `IntoIterator<Item: darling::FromMeta>`, then mark it with `#[darling(multiple)]`"
+)]
 pub trait FromMeta: Sized {
     fn from_nested_meta(item: &NestedMeta) -> Result<Self> {
         (match *item {
@@ -153,6 +156,10 @@ pub trait FromMeta: Sized {
     #[allow(unused_variables)]
     fn from_bool(value: bool) -> Result<Self> {
         Err(Error::unexpected_type("bool"))
+    }
+
+    fn docs_mods() -> Vec<DocsMod> {
+        Vec::new()
     }
 }
 
@@ -666,6 +673,10 @@ impl<T: FromMeta> FromMeta for Option<T> {
     fn from_meta(item: &Meta) -> Result<Self> {
         FromMeta::from_meta(item).map(Some)
     }
+
+    fn docs_mods() -> Vec<DocsMod> {
+        T::docs_mods()
+    }
 }
 
 impl<T: FromMeta> FromMeta for Result<T> {
@@ -682,6 +693,10 @@ impl<T: FromMeta> FromMeta for Result<T> {
 
     fn from_meta(item: &Meta) -> Result<Self> {
         Ok(FromMeta::from_meta(item))
+    }
+
+    fn docs_mods() -> Vec<DocsMod> {
+        T::docs_mods()
     }
 }
 
@@ -703,6 +718,10 @@ macro_rules! smart_pointer_t {
             fn from_meta(item: &Meta) -> Result<Self> {
                 FromMeta::from_meta(item).map($map_fn)
             }
+
+            fn docs_mods() -> Vec<DocsMod> {
+                T::docs_mods()
+            }
         }
     };
 }
@@ -719,6 +738,10 @@ impl<T: FromMeta> FromMeta for ::std::result::Result<T, Meta> {
         T::from_meta(item)
             .map(Ok)
             .or_else(|_| Ok(Err(item.clone())))
+    }
+
+    fn docs_mods() -> Vec<DocsMod> {
+        T::docs_mods()
     }
 }
 

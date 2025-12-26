@@ -108,6 +108,7 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let pass_data_to_receiver = self.data.map(|f| f.as_initializer());
 
         let inits = self.base.initializers();
+        let docs_mod = self.base.docs_mod();
         let default = if self.from_ident {
             quote!(let __default: Self = ::darling::export::From::from(#input.ident.clone());)
         } else {
@@ -158,7 +159,7 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                             #ty_ident_string,
                             ::darling::export::Span::call_site()
                         ),
-                        children: ::darling::export::Vec::new()
+                        children: ::darling::export::Vec::from([#docs_mod])
                     })
                 }
 
