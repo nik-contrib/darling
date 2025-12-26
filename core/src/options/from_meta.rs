@@ -99,6 +99,10 @@ impl ParseAttribute for FromMetaOptions {
 
         Ok(())
     }
+
+    fn add_doc(&mut self, doc: String) {
+        self.base.add_doc(doc);
+    }
 }
 
 impl ParseData for FromMetaOptions {

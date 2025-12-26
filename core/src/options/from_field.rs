@@ -29,6 +29,10 @@ impl ParseAttribute for FromFieldOptions {
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()> {
         self.base.parse_nested(mi)
     }
+
+    fn add_doc(&mut self, doc: String) {
+        self.base.add_doc(doc);
+    }
 }
 
 impl ParseData for FromFieldOptions {

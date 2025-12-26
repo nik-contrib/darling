@@ -4,6 +4,10 @@ use darling::FromDeriveInput;
 /// This is my input
 struct Input {}
 
-fn main() {
-    Input::docs_mod().unwrap();
+#[test]
+fn docgen() {
+    let input = Input::docs_mod().unwrap();
+
+    println!("{input}");
+    panic!();
 }

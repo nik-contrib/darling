@@ -53,6 +53,10 @@ impl ParseAttribute for FromVariantOptions {
             self.base.parse_nested(mi)
         }
     }
+
+    fn add_doc(&mut self, doc: String) {
+        self.base.add_doc(doc);
+    }
 }
 
 impl ParseData for FromVariantOptions {

@@ -74,6 +74,10 @@ impl ParseAttribute for OuterFrom {
         }
         Ok(())
     }
+
+    fn add_doc(&mut self, doc: String) {
+        self.container.add_doc(doc);
+    }
 }
 
 impl ParseData for OuterFrom {

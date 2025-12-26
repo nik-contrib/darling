@@ -15,6 +15,7 @@ pub struct ForwardedField {
     /// Path of the function that will be called to convert the forwarded value
     /// into the type expected by the field in `ident`.
     pub with: Option<Path>,
+    pub docs: Vec<String>,
 }
 
 impl ForwardedField {
@@ -32,6 +33,7 @@ impl FromField for ForwardedField {
             })?,
             ty: field.ty.clone(),
             with: None,
+            docs: Vec::new(),
         };
 
         result.parse_attributes(&field.attrs)
@@ -50,6 +52,10 @@ impl ParseAttribute for ForwardedField {
         } else {
             Err(Error::unknown_field_path_with_alts(mi.path(), &["with"]).with_span(mi))
         }
+    }
+
+    fn add_doc(&mut self, doc: String) {
+        self.docs.push(doc);
     }
 }
 

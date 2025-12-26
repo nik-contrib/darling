@@ -19,7 +19,7 @@ pub struct DocsMod {
 impl fmt::Display for DocsMod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for doc in &self.docs {
-            writeln!(f, "/// {doc}")?;
+            writeln!(f, "///{doc}")?;
         }
 
         writeln!(f, "mod {} {{", self.name)?;

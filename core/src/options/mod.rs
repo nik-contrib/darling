@@ -95,7 +95,7 @@ pub trait ParseAttribute: Sized {
     /// Read a meta-item, and apply its values to the current instance.
     fn parse_nested(&mut self, mi: &syn::Meta) -> Result<()>;
 
-    fn add_doc(&mut self, doc: String) {}
+    fn add_doc(&mut self, doc: String);
 }
 
 fn parse_attr<T: ParseAttribute>(attr: &syn::Attribute, target: &mut T) -> Result<()> {
