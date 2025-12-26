@@ -103,6 +103,13 @@ impl<'a> FieldsGen<'a> {
         quote!(#(#inits)*)
     }
 
+    pub(in crate::codegen) fn docs_use(&self, parent: &syn::Ident) -> TokenStream {
+        let inits = self.fields.as_ref().map(Field::as_docs_use);
+        let docs_use = inits.iter();
+
+        quote!(#(docs_uses.push(#parent::#docs_use);)*)
+    }
+
     pub(in crate::codegen) fn initializers(&self) -> TokenStream {
         let inits = self.fields.as_ref().map(Field::as_initializer);
         let inits = inits.iter();

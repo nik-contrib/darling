@@ -1,7 +1,7 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
 use std::fmt::{self, Write};
-use syn::{parse_quote, Ident, ItemUse};
+use syn::{parse_quote, punctuated::Punctuated, Ident, ItemUse};
 
 use crate::FromDeriveInput;
 
@@ -66,48 +66,56 @@ impl fmt::Display for DocsMod {
     }
 }
 
-/// Call `.generate(syn::parse_quote!(...))`, where `...` is the path where the top-level [`DocsMod`] lives
-/// and then output that as part of your macro's final output `TokenStream`
-#[derive(Default)]
-pub struct DocsUses(Vec<syn::Path>);
-
-impl Extend<DocsUses> for DocsUses {
-    fn extend<T: IntoIterator<Item = DocsUses>>(&mut self, iter: T) {
-        for i in iter {
-            self.0.extend(i.0);
-        }
-    }
+/// This is like `Vec<syn::Path>`, but we don't unnecessarily keep
+/// more identifiers than necessary
+///
+/// When `children` is empty, this is just a single identifier. e.g. `foo`
+///
+/// When children is non-empty, this is a list of paths, e.g. if children is `[foo::quux, bar]` and parent is `baz`, then
+/// this is equivalent to 2 paths: `baz::foo::quux` and `baz::bar`
+pub struct DocsUses {
+    pub parent: syn::Ident,
+    pub children: Vec<DocsUses>,
 }
 
 impl DocsUses {
-    pub fn new(path: &'static str) -> Self {
-        let ident = syn::Ident::new(path, Span::call_site());
-        Self(Vec::from([parse_quote!(#ident)]))
-    }
-
-    pub fn generate(self, root: syn::Path) -> TokenStream {
-        let paths = &self.0;
-        let root = &root;
-        quote! {
-            #(use #root::#paths as _)*
+    fn write_use_tree(&self, tokens: &mut TokenStream) {
+        let parent = &self.parent;
+        if self.children.is_empty() {
+            tokens.extend(quote! { #parent as _ });
+        } else {
+            let mut children_use_trees = TokenStream::new();
+            for child in &self.children {
+                child.write_use_tree(&mut children_use_trees);
+                children_use_trees.extend(quote! {,});
+            }
+            tokens.extend(quote! { #parent::{#children_use_trees} });
         }
     }
 }
 
-/// A `T` and its documentation imports
-pub struct Documented<T> {
-    /// Any item that can have documentation attached
-    pub item: T,
-    /// Documentation for `item`
-    pub docs: DocsUses,
-}
-
-impl<T: FromDeriveInput> FromDeriveInput for Documented<T> {
-    fn from_derive_input(input: &syn::DeriveInput) -> crate::Result<Self> {
-        let item = T::from_derive_input(input)?;
-        Ok(Documented {
-            docs: item.docs_uses(),
-            item,
-        })
+impl ToTokens for DocsUses {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(quote!(use));
+        self.write_use_tree(tokens);
+        tokens.extend(quote!(;));
     }
 }
+
+// impl DocsUse {
+//     /// Create a single identifier
+//     pub fn new(path: &'static str, span: impl syn::spanned::Spanned) -> Self {
+//         Self {
+//             parent: syn::Ident::new(path, span.span()),
+//             children: None,
+//         }
+//     }
+
+//     // pub fn generate(self, root: syn::Path) -> TokenStream {
+//     //     let paths = &self.0;
+//     //     let root = &root;
+//     //     quote! {
+//     //         #(use #root::#paths as _)*
+//     //     }
+//     // }
+// }

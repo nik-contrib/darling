@@ -84,7 +84,7 @@ extern crate darling_macro;
 pub use darling_macro::*;
 
 #[doc(inline)]
-pub use darling_core::{DocsMod, DocsUses, Documented};
+pub use darling_core::{DocsMod, DocsUse};
 
 #[doc(inline)]
 pub use darling_core::{

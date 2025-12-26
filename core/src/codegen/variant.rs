@@ -235,3 +235,46 @@ impl ToTokens for DocsMod<'_> {
         ));
     }
 }
+
+/// Code generator for an enum variant in a data-carrying match position.
+/// This is placed in generated `from_list` calls for the parent enum.
+/// Unit variants wrapped in this type will emit code to produce an "unsupported format" error.
+pub struct DocsUses<'a>(&'a Variant<'a>);
+
+impl ToTokens for DocsUses<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let val: &Variant<'_> = self.0;
+
+        if val.skip {
+            return;
+        }
+
+        let name = &val.name_in_attr;
+        let docs = &val.docs;
+        let children = if val.data.is_empty() {
+            quote! { ::darling::export::Vec::new() }
+        } else if let Some(inner) = val.data.as_newtype() {
+            let ty = &inner.ty;
+            quote! { <#ty as ::darling::FromMeta>::docs_mods() }
+        } else if val.data.is_struct() {
+            let vdg = FieldsGen::new(&val.data, val.allow_unknown_fields);
+            let docs_mod = vdg.docs_mod();
+            quote! { ::darling::export::Vec::from([#docs_mod]) }
+        } else {
+            unreachable!()
+        };
+
+        tokens.append_all(quote!(
+            ::darling::DocsMod {
+                docs: ::darling::export::Vec::from([
+                    #(::darling::export::String::from(#docs),)*
+                ]),
+                name: ::darling::export::syn::Ident::new(
+                    #name,
+                    ::darling::export::Span::call_site()
+                ),
+                children: #children
+            },
+        ));
+    }
+}

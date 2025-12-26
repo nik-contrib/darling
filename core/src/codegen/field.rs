@@ -81,6 +81,10 @@ impl<'a> Field<'a> {
         DocsMod(self)
     }
 
+    pub fn as_docs_use(&'a self) -> DocsUse<'a> {
+        DocsUse(self)
+    }
+
     pub fn as_presence_check(&'a self) -> CheckMissing<'a> {
         CheckMissing(self)
     }
@@ -315,6 +319,25 @@ impl ToTokens for DocsMod<'_> {
                 ),
                 children: #children
             },
+        ));
+    }
+}
+
+/// Generates module documentation for the field
+pub struct DocsUse<'a>(&'a Field<'a>);
+
+impl ToTokens for DocsUse<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        // Skipped and flattened fields cannot be populated by a meta
+        // with their name, so they do not generate doc module
+        if self.0.skip || self.0.flatten {
+            return;
+        }
+
+        let name = &self.0.name_in_attr;
+        let ident = &self.0.ident;
+        tokens.append_all(quote!(
+            ::darling::DocsUse::new(#name, self.#ident)
         ));
     }
 }
