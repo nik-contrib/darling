@@ -86,8 +86,6 @@ impl ToTokens for FromMetaImpl<'_> {
             }
             Data::Struct(ref data) => {
                 let inits = data.fields.iter().map(Field::as_initializer);
-                let docs_mod = data.fields.iter().map(Field::as_docs_mod);
-                let docs_uses = data.fields.iter().map(|field| field.as_docs_uses(false));
                 let declare_errors = base.declare_errors();
                 let require_fields = base.require_fields();
                 let check_errors = base.check_errors();
@@ -95,6 +93,26 @@ impl ToTokens for FromMetaImpl<'_> {
                 let core_loop = base.core_loop();
                 let default = base.fallback_decl();
                 let post_transform = base.post_transform_call();
+
+                let docs = base.generate_docs.then(|| {
+                    let docs_mod = data.fields.iter().map(Field::as_docs_mod);
+                    let docs_uses = data.fields.iter().map(|field| field.as_docs_uses(false));
+                    quote! {
+                        fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
+                            ::darling::export::Vec::from([
+                                #(#docs_mod)*
+                            ])
+                        }
+
+                        fn docs_uses(&self) -> ::darling::export::Vec<::darling::DocsUses> {
+                            let mut docs_uses = ::darling::export::Vec::new();
+                            #(
+                                ::darling::export::Extend::extend(&mut docs_uses, #docs_uses);
+                            )*
+                            docs_uses
+                        }
+                    }
+                });
 
                 quote!(
                     #from_word
@@ -122,19 +140,7 @@ impl ToTokens for FromMetaImpl<'_> {
                         }) #post_transform
                     }
 
-                    fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
-                        ::darling::export::Vec::from([
-                            #(#docs_mod)*
-                        ])
-                    }
-
-                    fn docs_uses(&self) -> ::darling::export::Vec<::darling::DocsUses> {
-                        let mut docs_uses = ::darling::export::Vec::new();
-                        #(
-                            ::darling::export::Extend::extend(&mut docs_uses, #docs_uses);
-                        )*
-                        docs_uses
-                    }
+                    #docs
                 )
             }
             Data::Enum(ref variants) => {
@@ -161,8 +167,25 @@ impl ToTokens for FromMetaImpl<'_> {
                 };
 
                 let data_variants = variants.iter().map(Variant::as_data_match_arm);
-                let docs_mod = variants.iter().map(Variant::as_docs_mod);
-                let docs_uses = variants.iter().map(Variant::as_docs_uses);
+
+                let docs = base.generate_docs.then(|| {
+                    let docs_mod = variants.iter().map(Variant::as_docs_mod);
+                    let docs_uses = variants.iter().map(Variant::as_docs_uses);
+                    quote! {
+                        fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
+                            ::darling::export::Vec::from([
+                                #(#docs_mod)*
+                            ])
+                        }
+
+                        fn docs_uses(&self) -> ::darling::export::Vec<::darling::DocsUses> {
+                            match self {
+                                #(#docs_uses)*
+                                _ => ::darling::export::Vec::new()
+                            }
+                        }
+                    }
+                });
 
                 quote!(
                     fn from_list(__outer: &[::darling::export::NestedMeta]) -> ::darling::Result<Self> {
@@ -191,18 +214,7 @@ impl ToTokens for FromMetaImpl<'_> {
                         }
                     }
 
-                    fn docs_mods() -> ::darling::export::Vec<::darling::DocsMod> {
-                        ::darling::export::Vec::from([
-                            #(#docs_mod)*
-                        ])
-                    }
-
-                    fn docs_uses(&self) -> ::darling::export::Vec<::darling::DocsUses> {
-                        match self {
-                            #(#docs_uses)*
-                            _ => ::darling::export::Vec::new()
-                        }
-                    }
+                    #docs
 
                     #from_word
 

@@ -15,7 +15,7 @@ mod spanned_value;
 mod with_original;
 
 #[doc(hidden)]
-pub fn safe_ident(s: &'static str) -> syn::Ident {
+pub fn safe_ident(s: &'static str, span: Span) -> syn::Ident {
     const STRICT_KEYWORDS: &[&str] = &[
         "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum",
         "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move",
@@ -24,9 +24,9 @@ pub fn safe_ident(s: &'static str) -> syn::Ident {
     ];
 
     if STRICT_KEYWORDS.contains(&s) {
-        syn::Ident::new_raw(s, Span::call_site())
+        syn::Ident::new_raw(s, span)
     } else {
-        syn::Ident::new(s, Span::call_site())
+        syn::Ident::new(s, span)
     }
 }
 

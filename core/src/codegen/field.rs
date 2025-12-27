@@ -317,7 +317,7 @@ impl ToTokens for DocsMod<'_> {
                 docs: ::darling::export::Vec::from([
                     #(::darling::export::String::from(#docs),)*
                 ]),
-                name: ::darling::util::safe_ident(#name),
+                name: ::darling::util::safe_ident(#name, ::darling::export::Span::call_site()),
                 children: #children
             },
         ));
@@ -346,7 +346,7 @@ impl ToTokens for DocsUses<'_> {
         let ident = &field.ident;
 
         // Expression that refers to the concrete field
-        let ident = if self.is_in_enum {
+        let accessor = if self.is_in_enum {
             // In enums, variables will be in scope because of destructuring the variant
             //
             // This represents field of a variant
@@ -362,10 +362,13 @@ impl ToTokens for DocsUses<'_> {
         let docs_uses = if field.multiple {
             quote! {
                 ::darling::export::Iterator::map(
-                    <&#ty as ::darling::export::IntoIterator>::into_iter(&#ident),
+                    <&#ty as ::darling::export::IntoIterator>::into_iter(&#accessor),
                     |item| {
                         ::darling::DocsUses {
-                            parent: ::darling::util::safe_ident(#name),
+                            parent: ::darling::util::safe_ident(
+                                #name,
+                                ::darling::export::Spanned::span(&item.#ident)
+                            ),
                             children: <<#ty as ::darling::export::IntoIterator>::Item
                                 as ::darling::FromMeta>::docs_uses(item)
                         }
@@ -375,8 +378,11 @@ impl ToTokens for DocsUses<'_> {
         } else {
             quote! {
                 [::darling::DocsUses {
-                    parent: ::darling::util::safe_ident(#name),
-                    children: <#ty as ::darling::FromMeta>::docs_uses(&#ident)
+                    parent: ::darling::util::safe_ident(
+                        #name,
+                        ::darling::export::Spanned::span(&#accessor)
+                    ),
+                    children: <#ty as ::darling::FromMeta>::docs_uses(&#accessor)
                 }]
             }
         };

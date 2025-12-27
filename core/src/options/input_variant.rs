@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
 use crate::ast::Fields;
-use crate::codegen;
-use crate::options::{Core, InputField, ParseAttribute};
+use crate::options::{Core, ForwardedField, InputField, ParseAttribute};
 use crate::util::SpannedValue;
+use crate::{codegen, FromField};
 use crate::{Error, FromMeta, Result};
 
 #[derive(Debug, Clone)]
@@ -18,6 +18,7 @@ pub struct InputVariant {
     /// Whether or not unknown fields are acceptable in this
     allow_unknown_fields: Option<bool>,
     pub docs: Vec<String>,
+    pub variant_span: Option<ForwardedField>,
 }
 
 impl InputVariant {
@@ -53,6 +54,7 @@ impl InputVariant {
             word: Default::default(),
             allow_unknown_fields: None,
             docs: Default::default(),
+            variant_span: None,
         })
         .parse_attributes(&v.attrs)?;
 
@@ -69,7 +71,11 @@ impl InputVariant {
             syn::Fields::Named(ref fields) => {
                 let mut items = Vec::with_capacity(fields.named.len());
                 for item in &fields.named {
-                    items.push(InputField::from_field(item, parent)?);
+                    if item.ident.as_ref().expect("Fields are Named") == "span" {
+                        starter.variant_span = Some(ForwardedField::from_field(item)?);
+                    } else {
+                        items.push(InputField::from_field(item, parent)?);
+                    }
                 }
 
                 items

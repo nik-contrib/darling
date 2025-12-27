@@ -117,6 +117,7 @@ pub mod export {
     pub use core::result::Result::{self, Err, Ok};
     pub use darling_core::proc_macro2::Span;
     pub use darling_core::syn;
+    pub use darling_core::syn::spanned::Spanned;
     pub use std::string::String;
     pub use std::string::ToString;
     pub use std::vec::Vec;

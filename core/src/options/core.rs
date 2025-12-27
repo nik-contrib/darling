@@ -43,6 +43,9 @@ pub struct Core {
     pub allow_unknown_fields: Option<bool>,
 
     pub docs: Vec<String>,
+
+    /// If `#[darling(docs)]` is present, generates documentation
+    pub generate_docs: Option<bool>,
 }
 
 impl Core {
@@ -64,6 +67,7 @@ impl Core {
             bound: Default::default(),
             allow_unknown_fields: Default::default(),
             docs: Default::default(),
+            generate_docs: Default::default(),
         })
     }
 
@@ -121,6 +125,12 @@ impl ParseAttribute for Core {
                 Some(PostfixTransform::new(transformer, FromMeta::from_meta(mi)?));
         } else if path.is_ident("bound") {
             self.bound = FromMeta::from_meta(mi)?;
+        } else if path.is_ident("docs") {
+            if self.generate_docs.is_some() {
+                return Err(Error::duplicate_field("docs").with_span(mi));
+            }
+
+            self.generate_docs = FromMeta::from_meta(mi)?;
         } else if path.is_ident("allow_unknown_fields") {
             if self.allow_unknown_fields.is_some() {
                 return Err(Error::duplicate_field("allow_unknown_fields").with_span(mi));
@@ -164,24 +174,44 @@ impl ParseData for Core {
     }
 
     fn validate_body(&self, errors: &mut Accumulator) {
-        if let Data::Struct(fields) = &self.data {
-            let flatten_targets: Vec<_> = fields
-                .iter()
-                .filter_map(|field| {
-                    if field.flatten.is_present() {
-                        Some(field.flatten)
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+        match &self.data {
+            Data::Enum(variants) => {
+                if self.generate_docs != Some(true) {
+                    return;
+                }
 
-            if flatten_targets.len() > 1 {
-                for flatten in flatten_targets {
-                    errors.push(
-                        Error::custom("`#[darling(flatten)]` can only be applied to one field")
-                            .with_span(&flatten.span()),
-                    );
+                // If we generate docs, each variant must have an associated span
+                for variant in variants {
+                    if variant.variant_span.is_none() {
+                        errors.push(
+                            Error::custom(concat!(
+                                "expected field `span: proc_macro2::Span` ",
+                                "because of `#[darling(docs)]`"
+                            ))
+                            .with_span(&variant.ident.span()),
+                        );
+                    }
+                }
+            }
+            Data::Struct(fields) => {
+                let flatten_targets: Vec<_> = fields
+                    .iter()
+                    .filter_map(|field| {
+                        if field.flatten.is_present() {
+                            Some(field.flatten)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if flatten_targets.len() > 1 {
+                    for flatten in flatten_targets {
+                        errors.push(
+                            Error::custom("`#[darling(flatten)]` can only be applied to one field")
+                                .with_span(&flatten.span()),
+                        );
+                    }
                 }
             }
         }
@@ -202,6 +232,7 @@ impl<'a> From<&'a Core> for codegen::TraitImpl<'a> {
             post_transform: v.post_transform.as_ref(),
             allow_unknown_fields: v.allow_unknown_fields.unwrap_or_default(),
             docs: v.docs.as_slice(),
+            generate_docs: v.generate_docs == Some(true),
         }
     }
 }

@@ -18,6 +18,7 @@ pub struct TraitImpl<'a> {
     pub post_transform: Option<&'a PostfixTransform>,
     pub allow_unknown_fields: bool,
     pub docs: &'a [String],
+    pub generate_docs: bool,
 }
 
 impl<'a> TraitImpl<'a> {

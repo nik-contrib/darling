@@ -231,7 +231,7 @@ impl ToTokens for DocsMod<'_> {
                 docs: ::darling::export::Vec::from([
                     #(::darling::export::String::from(#docs),)*
                 ]),
-                name: ::darling::util::safe_ident(#name),
+                name: ::darling::util::safe_ident(#name, ::darling::export::Span::call_site()),
                 children: #children
             },
         ));

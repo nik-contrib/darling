@@ -30,7 +30,6 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let ty_ident = self.base.ident;
         let input = self.param_name();
         let post_transform = self.base.post_transform_call();
-        let docs = self.base.docs;
 
         if let Data::Struct(ref data) = self.base.data {
             if data.is_newtype() {
@@ -108,8 +107,6 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let pass_data_to_receiver = self.data.map(|f| f.as_initializer());
 
         let inits = self.base.initializers();
-        let docs_mod = self.base.docs_mod();
-        let docs_uses = self.base.docs_uses();
         let default = if self.from_ident {
             quote!(let __default: Self = ::darling::export::From::from(#input.ident.clone());)
         } else {
@@ -123,6 +120,44 @@ impl ToTokens for FromDeriveInputImpl<'_> {
         let check_errors = self.base.check_errors();
 
         let ty_ident_string = ty_ident.to_string();
+
+        let docs = self.base.generate_docs.then(|| {
+            let docs = self.base.docs;
+            let docs_mod = self.base.docs_mod();
+            let docs_uses = self.base.docs_uses();
+            quote! {
+                fn docs_mod() -> ::darling::export::Option<::darling::DocsMod> {
+                    ::darling::export::Some(::darling::DocsMod {
+                        docs: ::darling::export::Vec::from([
+                            #(::darling::export::String::from(#docs),)*
+                        ]),
+                        name: ::darling::util::safe_ident(
+                            #ty_ident_string,
+                            ::darling::export::Span::call_site()
+                        ),
+                        children: ::darling::export::Vec::from([#docs_mod])
+                    })
+                }
+
+                fn docs_uses(&self) -> ::darling::export::Option<::darling::DocsUses> {
+                    let mut children = ::darling::export::Vec::new();
+                    #(
+                        ::darling::export::Extend::extend(&mut children, #docs_uses);
+                    )*
+                    ::darling::export::Some(::darling::DocsUses {
+                        parent: ::darling::util::safe_ident(
+                            #ty_ident_string,
+                            // Since this is directly the type that has `#[derive(FromDeriveInput)]`,
+                            // we don't need it's span since it won't be attached to any hover
+                            //
+                            // Its fields will be.
+                            ::darling::export::Span::call_site()
+                        ),
+                        children
+                    })
+                }
+            }
+        });
 
         self.wrap(
             quote! {
@@ -151,26 +186,7 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                     }) #post_transform
                 }
 
-                fn docs_mod() -> ::darling::export::Option<::darling::DocsMod> {
-                    ::darling::export::Some(::darling::DocsMod {
-                        docs: ::darling::export::Vec::from([
-                            #(::darling::export::String::from(#docs),)*
-                        ]),
-                        name: ::darling::util::safe_ident(#ty_ident_string),
-                        children: ::darling::export::Vec::from([#docs_mod])
-                    })
-                }
-
-                fn docs_uses(&self) -> ::darling::export::Option<::darling::DocsUses> {
-                    let mut children = ::darling::export::Vec::new();
-                    #(
-                        ::darling::export::Extend::extend(&mut children, #docs_uses);
-                    )*
-                    ::darling::export::Some(::darling::DocsUses {
-                        parent: ::darling::util::safe_ident(#ty_ident_string),
-                        children
-                    })
-                }
+                #docs
             },
             tokens,
         );
