@@ -297,9 +297,7 @@ pub struct DocsMod<'a>(&'a Field<'a>);
 
 impl ToTokens for DocsMod<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        // Skipped and flattened fields cannot be populated by a meta
-        // with their name, so they do not generate doc module
-        if self.0.skip || self.0.flatten {
+        if self.0.skip {
             return;
         }
 
@@ -340,9 +338,8 @@ impl ToTokens for DocsUses<'_> {
         } else {
             Some(quote! { self. })
         };
-        // Skipped and flattened fields cannot be populated by a meta
-        // with their name, so they do not generate doc module
-        if variant.skip || variant.flatten {
+
+        if variant.skip {
             return;
         }
 

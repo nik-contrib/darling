@@ -1,5 +1,12 @@
 use darling::{FromDeriveInput, FromMeta};
 
+#[derive(Default, FromMeta, PartialEq, Debug)]
+struct Flattened {
+    flattened_left: String,
+    #[darling(multiple)]
+    flattened_right: Vec<Lorem>,
+}
+
 #[derive(FromMeta, PartialEq, Debug)]
 /// Lorem
 enum Enum {
@@ -47,6 +54,8 @@ struct Input {
     multiple_lorem: Vec<Lorem>,
     /// foo: Enum
     foo: Enum,
+    #[darling(flatten)]
+    flattened: Flattened,
 }
 
 #[test]
