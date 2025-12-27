@@ -178,23 +178,44 @@ fn docgen() {
     assert_str_eq!(actual_mods, expected_mods.to_string());
 
     let docs_uses = input.docs_uses().unwrap();
+    dbg!(&docs_uses);
 
     let expected_uses = quote! {
         use Input::{
-            lorem::{ipsum as _, dolor as _,},
+            lorem::{
+                ipsum as _,
+                dolor::{inner as _,},
+            },
             multiple as _,
-            multiple_lorem::{ipsum as _, dolor as _, ipsum as _, dolor as _,},
-            foo::{r#struct::{
-                foo as _,
-                bar::{ipsum as _, dolor as _,},
-            },},
+            multiple_lorem::{
+                ipsum as _,
+                dolor as _,
+                ipsum as _,
+                dolor::{inner as _,},
+            },
+            foo::{
+                r#struct::{
+                    foo as _,
+                    bar::{
+                        ipsum as _,
+                        dolor as _,
+                    },
+                },
+            },
             not_present as _,
             flattened::{
                 flattened_left as _,
-                flattened_right::{ipsum as _, dolor as _, ipsum as _, dolor as _,},
+                flattened_right::{
+                    ipsum as _,
+                    dolor as _,
+                    ipsum as _,
+                    dolor::{inner as _,},
+                },
             },
         };
     };
 
     assert_str_eq!(quote!(#docs_uses).to_string(), expected_uses.to_string());
+
+    panic!();
 }

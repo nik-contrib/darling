@@ -71,6 +71,7 @@ impl fmt::Display for DocsMod {
 ///
 /// When children is non-empty, this is a list of paths, e.g. if children is `[foo::quux, bar]` and parent is `baz`, then
 /// this is equivalent to 2 paths: `baz::foo::quux` and `baz::bar`
+#[derive(Debug)]
 pub struct DocsUses {
     pub parent: syn::Ident,
     pub children: Vec<DocsUses>,

@@ -83,7 +83,7 @@ impl<'a> Field<'a> {
 
     pub fn as_docs_uses(&'a self, is_in_enum: bool) -> DocsUses<'a> {
         DocsUses {
-            variant: self,
+            field: self,
             is_in_enum,
         }
     }
@@ -292,19 +292,20 @@ impl ToTokens for CheckMissing<'_> {
     }
 }
 
-/// Generates module documentation for the field
 pub struct DocsMod<'a>(&'a Field<'a>);
 
 impl ToTokens for DocsMod<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        if self.0.skip {
+        let field = &self.0;
+
+        if field.skip {
             return;
         }
 
-        let name = &self.0.name_in_attr;
-        let docs = &self.0.docs;
-        let ty = &self.0.ty;
-        let children = if self.0.multiple {
+        let name = &field.name_in_attr;
+        let docs = &field.docs;
+        let ty = &field.ty;
+        let children = if field.multiple {
             quote!(<<#ty as IntoIterator>::Item as ::darling::FromMeta>::docs_mods())
         } else {
             quote!(<#ty as ::darling::FromMeta>::docs_mods())
@@ -321,29 +322,30 @@ impl ToTokens for DocsMod<'_> {
     }
 }
 
-/// Generates module documentation for the field
 pub struct DocsUses<'a> {
-    variant: &'a Field<'a>,
+    field: &'a Field<'a>,
     is_in_enum: bool,
 }
 
 impl ToTokens for DocsUses<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let variant = &self.variant;
+        let field = &self.field;
+
+        if field.skip {
+            return;
+        }
+
         let accessor_prefix = if self.is_in_enum {
+            // Variables will be in scope because of destructuring
             None
         } else {
             Some(quote! { self. })
         };
 
-        if variant.skip {
-            return;
-        }
-
-        let name = &variant.name_in_attr;
-        let ident = &variant.ident;
-        let ty = &variant.ty;
-        let children = if variant.multiple {
+        let name = &field.name_in_attr;
+        let ident = &field.ident;
+        let ty = &field.ty;
+        let children = if field.multiple {
             quote!({
                 let iter = <&#ty as ::darling::export::IntoIterator>::into_iter(&#accessor_prefix #ident);
                 let iter = ::darling::export::Iterator::flat_map(iter, |item| {

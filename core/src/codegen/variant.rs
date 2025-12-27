@@ -204,21 +204,22 @@ pub struct DocsMod<'a>(&'a Variant<'a>);
 
 impl ToTokens for DocsMod<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let val: &Variant<'_> = self.0;
+        let variant = self.0;
 
-        if val.skip {
+        if variant.skip {
             return;
         }
 
-        let name = &val.name_in_attr;
-        let docs = &val.docs;
-        let children = if val.data.is_empty() {
+        let name = &variant.name_in_attr;
+        let docs = &variant.docs;
+
+        let children = if variant.data.is_empty() {
             quote! { ::darling::export::Vec::new() }
-        } else if let Some(inner) = val.data.as_newtype() {
+        } else if let Some(inner) = variant.data.as_newtype() {
             let ty = &inner.ty;
             quote! { <#ty as ::darling::FromMeta>::docs_mods() }
-        } else if val.data.is_struct() {
-            let vdg = FieldsGen::new(&val.data, val.allow_unknown_fields);
+        } else if variant.data.is_struct() {
+            let vdg = FieldsGen::new(&variant.data, variant.allow_unknown_fields);
             let docs_mod = vdg.docs_mod();
             quote! { ::darling::export::Vec::from([#docs_mod]) }
         } else {
@@ -244,27 +245,27 @@ pub struct DocsUses<'a>(&'a Variant<'a>);
 
 impl ToTokens for DocsUses<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let val: &Variant<'_> = self.0;
+        let variant = self.0;
 
-        if val.skip {
+        if variant.skip {
             return;
         }
 
-        let name = &val.name_in_attr;
-        let ident = &val.variant_ident;
+        let name = &variant.name_in_attr;
+        let ident = &variant.variant_ident;
 
-        let (destructure, children) = if val.data.is_empty() {
+        let (destructure, children) = if variant.data.is_empty() {
             (quote! {}, quote! { ::darling::export::Vec::new() })
-        } else if let Some(inner) = val.data.as_newtype() {
+        } else if let Some(inner) = variant.data.as_newtype() {
             let ty = inner.ty;
             let ident = inner.ident;
             (
                 quote! { (#ident) },
                 quote! { <#ty as ::darling::FromMeta>::docs_uses(&#ident) },
             )
-        } else if val.data.is_struct() {
-            let fields = val.data.iter().map(|field| &field.ident);
-            let vdg = FieldsGen::new(&val.data, val.allow_unknown_fields);
+        } else if variant.data.is_struct() {
+            let fields = variant.data.iter().map(|field| &field.ident);
+            let vdg = FieldsGen::new(&variant.data, variant.allow_unknown_fields);
             let docs_mod = vdg.docs_uses(true);
             (
                 quote! { { #(#fields,)* } },

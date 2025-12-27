@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::collections::btree_map::BTreeMap;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
@@ -681,6 +680,10 @@ impl<T: FromMeta> FromMeta for Option<T> {
     fn docs_mods() -> Vec<DocsMod> {
         T::docs_mods()
     }
+
+    fn docs_uses(&self) -> Vec<DocsUses> {
+        self.as_ref().map_or_else(Vec::new, |it| it.docs_uses())
+    }
 }
 
 impl<T: FromMeta> FromMeta for Result<T> {
@@ -701,6 +704,12 @@ impl<T: FromMeta> FromMeta for Result<T> {
 
     fn docs_mods() -> Vec<DocsMod> {
         T::docs_mods()
+    }
+
+    fn docs_uses(&self) -> Vec<DocsUses> {
+        self.as_ref()
+            .ok()
+            .map_or_else(Vec::new, |it| it.docs_uses())
     }
 }
 
@@ -726,6 +735,10 @@ macro_rules! smart_pointer_t {
             fn docs_mods() -> Vec<DocsMod> {
                 T::docs_mods()
             }
+
+            fn docs_uses(&self) -> Vec<DocsUses> {
+                T::docs_uses(self)
+            }
         }
     };
 }
@@ -733,7 +746,6 @@ macro_rules! smart_pointer_t {
 smart_pointer_t!(Box<T>, Box::new);
 smart_pointer_t!(Rc<T>, Rc::new);
 smart_pointer_t!(Arc<T>, Arc::new);
-smart_pointer_t!(RefCell<T>, RefCell::new);
 
 /// Parses the meta-item, and in case of error preserves a copy of the input for
 /// later analysis.
@@ -746,6 +758,12 @@ impl<T: FromMeta> FromMeta for ::std::result::Result<T, Meta> {
 
     fn docs_mods() -> Vec<DocsMod> {
         T::docs_mods()
+    }
+
+    fn docs_uses(&self) -> Vec<DocsUses> {
+        self.as_ref()
+            .ok()
+            .map_or_else(Vec::new, |it| it.docs_uses())
     }
 }
 
