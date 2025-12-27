@@ -305,11 +305,13 @@ impl ToTokens for DocsMod<'_> {
         let name = &field.name_in_attr;
         let docs = &field.docs;
         let ty = &field.ty;
+
         let children = if field.multiple {
             quote!(<<#ty as IntoIterator>::Item as ::darling::FromMeta>::docs_mods())
         } else {
             quote!(<#ty as ::darling::FromMeta>::docs_mods())
         };
+
         tokens.append_all(quote!(
             ::darling::DocsMod {
                 docs: ::darling::export::Vec::from([
@@ -345,6 +347,7 @@ impl ToTokens for DocsUses<'_> {
         let name = &field.name_in_attr;
         let ident = &field.ident;
         let ty = &field.ty;
+
         let children = if field.multiple {
             quote!({
                 let iter = <&#ty as ::darling::export::IntoIterator>::into_iter(&#accessor_prefix #ident);
@@ -356,6 +359,7 @@ impl ToTokens for DocsUses<'_> {
         } else {
             quote!(<#ty as ::darling::FromMeta>::docs_uses(&#accessor_prefix #ident))
         };
+
         tokens.append_all(quote!(
             ::darling::DocsUses {
                 parent: ::darling::util::safe_ident(#name),
