@@ -314,10 +314,7 @@ impl ToTokens for DocsMod<'_> {
                 docs: ::darling::export::Vec::from([
                     #(::darling::export::String::from(#docs),)*
                 ]),
-                name: ::darling::export::syn::Ident::new(
-                    #name,
-                    ::darling::export::Span::call_site()
-                ),
+                name: ::darling::util::safe_ident(#name),
                 children: #children
             },
         ));
@@ -359,10 +356,7 @@ impl ToTokens for DocsUses<'_> {
         };
         tokens.append_all(quote!(
             ::darling::DocsUses {
-                parent: ::darling::export::syn::Ident::new(
-                    #name,
-                    ::darling::export::Span::call_site()
-                ),
+                parent: ::darling::util::safe_ident(#name),
                 children: #children
             },
         ));

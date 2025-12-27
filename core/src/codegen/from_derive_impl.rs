@@ -156,20 +156,14 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                         docs: ::darling::export::Vec::from([
                             #(::darling::export::String::from(#docs),)*
                         ]),
-                        name: ::darling::export::syn::Ident::new(
-                            #ty_ident_string,
-                            ::darling::export::Span::call_site()
-                        ),
+                        name: ::darling::util::safe_ident(#ty_ident_string),
                         children: ::darling::export::Vec::from([#docs_mod])
                     })
                 }
 
                 fn docs_uses(&self) -> ::darling::export::Option<::darling::DocsUses> {
                     ::darling::export::Some(::darling::DocsUses {
-                        parent: ::darling::export::syn::Ident::new(
-                            #ty_ident_string,
-                            ::darling::export::Span::call_site()
-                        ),
+                        parent: ::darling::util::safe_ident(#ty_ident_string),
                         children: ::darling::export::Vec::from([#docs_uses])
                     })
                 }
