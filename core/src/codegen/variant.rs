@@ -266,10 +266,16 @@ impl ToTokens for DocsUses<'_> {
         } else if variant.data.is_struct() {
             let fields = variant.data.iter().map(|field| &field.ident);
             let vdg = FieldsGen::new(&variant.data, variant.allow_unknown_fields);
-            let docs_mod = vdg.docs_uses(true);
+            let docs_uses = vdg.docs_uses(true);
             (
                 quote! { { #(#fields,)* } },
-                quote! { ::darling::export::Vec::from([#docs_mod]) },
+                quote! {{
+                    let mut docs_uses = ::darling::export::Vec::new();
+                    #(
+                        ::darling::export::Extend::extend(&mut docs_uses, #docs_uses);
+                    )*
+                    docs_uses
+                }},
             )
         } else {
             unreachable!()

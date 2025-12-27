@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 
 use crate::ast::{Fields, Style};
 use crate::codegen::Field;
@@ -103,13 +103,12 @@ impl<'a> FieldsGen<'a> {
         quote!(#(#inits)*)
     }
 
-    pub(in crate::codegen) fn docs_uses(&self, is_in_enum: bool) -> TokenStream {
+    pub(in crate::codegen) fn docs_uses(&self, is_in_enum: bool) -> Vec<TokenStream> {
         let inits = self
             .fields
             .as_ref()
             .map(|field| field.as_docs_uses(is_in_enum));
-        let docs_use = inits.iter();
-        quote!(#(#docs_use)*)
+        inits.iter().map(|it| it.to_token_stream()).collect()
     }
 
     pub(in crate::codegen) fn initializers(&self) -> TokenStream {

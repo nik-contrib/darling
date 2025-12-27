@@ -110,6 +110,7 @@ pub use darling_core::ToTokens;
 pub mod export {
     pub use core::convert::{identity, From, Into, TryFrom};
     pub use core::default::Default;
+    pub use core::iter::Extend;
     pub use core::iter::IntoIterator;
     pub use core::iter::Iterator;
     pub use core::option::Option::{self, None, Some};

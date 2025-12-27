@@ -136,7 +136,7 @@ impl<'a> TraitImpl<'a> {
         self.make_field_ctx().docs_mod()
     }
 
-    pub(in crate::codegen) fn docs_uses(&self) -> TokenStream {
+    pub(in crate::codegen) fn docs_uses(&self) -> Vec<TokenStream> {
         self.make_field_ctx().docs_uses(false)
     }
 

@@ -324,8 +324,11 @@ impl ToTokens for DocsMod<'_> {
     }
 }
 
+/// When quoted, evaluates to an iterator of [`crate::DocsUses`]
 pub struct DocsUses<'a> {
+    /// Field that the `use` statements are generated for
     field: &'a Field<'a>,
+    /// Whether this field is part of an `enum`
     is_in_enum: bool,
 }
 
@@ -334,37 +337,50 @@ impl ToTokens for DocsUses<'_> {
         let field = &self.field;
 
         if field.skip {
+            // This will be wrapped in `Extend::extend`, so we must output something
+            // An empty array does the trick
+            tokens.extend(quote! {[]});
             return;
         }
 
-        let accessor_prefix = if self.is_in_enum {
-            // Variables will be in scope because of destructuring
-            None
+        let ident = &field.ident;
+
+        // Expression that refers to the concrete field
+        let ident = if self.is_in_enum {
+            // In enums, variables will be in scope because of destructuring the variant
+            //
+            // This represents field of a variant
+            quote! { #ident }
         } else {
-            Some(quote! { self. })
+            // Represents field of a struct, no `match` needed, so just access on `self`
+            quote! { self.#ident }
         };
 
         let name = &field.name_in_attr;
-        let ident = &field.ident;
         let ty = &field.ty;
 
-        let children = if field.multiple {
-            quote!({
-                let iter = <&#ty as ::darling::export::IntoIterator>::into_iter(&#accessor_prefix #ident);
-                let iter = ::darling::export::Iterator::flat_map(iter, |item| {
-                    <<#ty as ::darling::export::IntoIterator>::Item as ::darling::FromMeta>::docs_uses(item)
-                });
-                ::darling::export::Iterator::collect(iter)
-            })
+        let docs_uses = if field.multiple {
+            quote! {
+                ::darling::export::Iterator::map(
+                    <&#ty as ::darling::export::IntoIterator>::into_iter(&#ident),
+                    |item| {
+                        ::darling::DocsUses {
+                            parent: ::darling::util::safe_ident(#name),
+                            children: <<#ty as ::darling::export::IntoIterator>::Item
+                                as ::darling::FromMeta>::docs_uses(item)
+                        }
+                    }
+                )
+            }
         } else {
-            quote!(<#ty as ::darling::FromMeta>::docs_uses(&#accessor_prefix #ident))
+            quote! {
+                [::darling::DocsUses {
+                    parent: ::darling::util::safe_ident(#name),
+                    children: <#ty as ::darling::FromMeta>::docs_uses(&#ident)
+                }]
+            }
         };
 
-        tokens.append_all(quote!(
-            ::darling::DocsUses {
-                parent: ::darling::util::safe_ident(#name),
-                children: #children
-            },
-        ));
+        tokens.append_all(docs_uses);
     }
 }

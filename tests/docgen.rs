@@ -174,24 +174,29 @@ fn docgen() {
     // round-trip to "normalize" it so we can do string comparison
     let actual_mods = syn::parse_file(&actual_mods).unwrap();
     let actual_mods = quote!(#actual_mods).to_string();
-    println!("{actual_mods}");
     assert_str_eq!(actual_mods, expected_mods.to_string());
 
     let docs_uses = input.docs_uses().unwrap();
-    dbg!(&docs_uses);
 
     let expected_uses = quote! {
         use Input::{
             lorem::{
                 ipsum as _,
-                dolor::{inner as _,},
+                dolor::{
+                    inner as _,
+                },
             },
+            multiple as _,
             multiple as _,
             multiple_lorem::{
                 ipsum as _,
                 dolor as _,
+            },
+            multiple_lorem::{
                 ipsum as _,
-                dolor::{inner as _,},
+                dolor::{
+                    inner as _,
+                },
             },
             foo::{
                 r#struct::{
@@ -208,14 +213,16 @@ fn docgen() {
                 flattened_right::{
                     ipsum as _,
                     dolor as _,
+                },
+                flattened_right::{
                     ipsum as _,
-                    dolor::{inner as _,},
+                    dolor::{
+                        inner as _,
+                    },
                 },
             },
         };
     };
 
     assert_str_eq!(quote!(#docs_uses).to_string(), expected_uses.to_string());
-
-    panic!();
 }

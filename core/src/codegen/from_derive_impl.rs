@@ -162,9 +162,13 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                 }
 
                 fn docs_uses(&self) -> ::darling::export::Option<::darling::DocsUses> {
+                    let mut children = ::darling::export::Vec::new();
+                    #(
+                        ::darling::export::Extend::extend(&mut children, #docs_uses);
+                    )*
                     ::darling::export::Some(::darling::DocsUses {
                         parent: ::darling::util::safe_ident(#ty_ident_string),
-                        children: ::darling::export::Vec::from([#docs_uses])
+                        children
                     })
                 }
             },

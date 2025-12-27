@@ -129,9 +129,11 @@ impl ToTokens for FromMetaImpl<'_> {
                     }
 
                     fn docs_uses(&self) -> ::darling::export::Vec<::darling::DocsUses> {
-                        ::darling::export::Vec::from([
-                            #(#docs_uses)*
-                        ])
+                        let mut docs_uses = ::darling::export::Vec::new();
+                        #(
+                            ::darling::export::Extend::extend(&mut docs_uses, #docs_uses);
+                        )*
+                        docs_uses
                     }
                 )
             }
