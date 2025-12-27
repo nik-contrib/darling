@@ -1,4 +1,4 @@
-use darling::{util::Flag, FromDeriveInput, FromMeta};
+use darling::{FromDeriveInput, FromMeta};
 use pretty_assertions::assert_str_eq;
 use quote::quote;
 
