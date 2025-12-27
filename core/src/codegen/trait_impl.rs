@@ -136,8 +136,8 @@ impl<'a> TraitImpl<'a> {
         self.make_field_ctx().docs_mod()
     }
 
-    pub(in crate::codegen) fn docs_uses(&self, parent: &syn::Ident) -> TokenStream {
-        self.make_field_ctx().docs_use(parent)
+    pub(in crate::codegen) fn docs_uses(&self) -> TokenStream {
+        self.make_field_ctx().docs_uses(false)
     }
 
     /// Generate the loop which walks meta items looking for property matches.

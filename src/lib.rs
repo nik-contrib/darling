@@ -84,7 +84,7 @@ extern crate darling_macro;
 pub use darling_macro::*;
 
 #[doc(inline)]
-pub use darling_core::{DocsMod, DocsUse};
+pub use darling_core::{DocsMod, DocsUses};
 
 #[doc(inline)]
 pub use darling_core::{
@@ -111,6 +111,7 @@ pub mod export {
     pub use core::convert::{identity, From, Into, TryFrom};
     pub use core::default::Default;
     pub use core::iter::IntoIterator;
+    pub use core::iter::Iterator;
     pub use core::option::Option::{self, None, Some};
     pub use core::result::Result::{self, Err, Ok};
     pub use darling_core::proc_macro2::Span;

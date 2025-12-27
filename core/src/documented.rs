@@ -1,9 +1,7 @@
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens, TokenStreamExt};
-use std::fmt::{self, Write};
-use syn::{parse_quote, punctuated::Punctuated, Ident, ItemUse};
-
-use crate::FromDeriveInput;
+use quote::{quote, ToTokens};
+use std::fmt::{self};
+use syn::Ident;
 
 pub struct DocsMod {
     /// A list of `///` comments

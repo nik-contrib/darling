@@ -81,8 +81,11 @@ impl<'a> Field<'a> {
         DocsMod(self)
     }
 
-    pub fn as_docs_use(&'a self) -> DocsUse<'a> {
-        DocsUse(self)
+    pub fn as_docs_uses(&'a self, is_in_enum: bool) -> DocsUses<'a> {
+        DocsUses {
+            variant: self,
+            is_in_enum,
+        }
     }
 
     pub fn as_presence_check(&'a self) -> CheckMissing<'a> {
@@ -324,20 +327,47 @@ impl ToTokens for DocsMod<'_> {
 }
 
 /// Generates module documentation for the field
-pub struct DocsUse<'a>(&'a Field<'a>);
+pub struct DocsUses<'a> {
+    variant: &'a Field<'a>,
+    is_in_enum: bool,
+}
 
-impl ToTokens for DocsUse<'_> {
+impl ToTokens for DocsUses<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        let variant = &self.variant;
+        let accessor_prefix = if self.is_in_enum {
+            None
+        } else {
+            Some(quote! { self. })
+        };
         // Skipped and flattened fields cannot be populated by a meta
         // with their name, so they do not generate doc module
-        if self.0.skip || self.0.flatten {
+        if variant.skip || variant.flatten {
             return;
         }
 
-        let name = &self.0.name_in_attr;
-        let ident = &self.0.ident;
+        let name = &variant.name_in_attr;
+        let ident = &variant.ident;
+        let ty = &variant.ty;
+        let children = if variant.multiple {
+            quote!({
+                let iter = <&#ty as ::darling::export::IntoIterator>::into_iter(&#accessor_prefix #ident);
+                let iter = ::darling::export::Iterator::flat_map(iter, |item| {
+                    <<#ty as ::darling::export::IntoIterator>::Item as ::darling::FromMeta>::docs_uses(item)
+                });
+                ::darling::export::Iterator::collect(iter)
+            })
+        } else {
+            quote!(<#ty as ::darling::FromMeta>::docs_uses(&#accessor_prefix #ident))
+        };
         tokens.append_all(quote!(
-            ::darling::DocsUse::new(#name, self.#ident)
+            ::darling::DocsUses {
+                parent: ::darling::export::syn::Ident::new(
+                    #name,
+                    ::darling::export::Span::call_site()
+                ),
+                children: #children
+            },
         ));
     }
 }

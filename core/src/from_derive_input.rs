@@ -1,7 +1,7 @@
 use syn::DeriveInput;
 
 use crate::{
-    documented::{DocsMod, DocsUse},
+    documented::{DocsMod, DocsUses},
     Result,
 };
 
@@ -15,8 +15,8 @@ pub trait FromDeriveInput: Sized {
     /// Create an instance from `syn::DeriveInput`, or return an error.
     fn from_derive_input(input: &DeriveInput) -> Result<Self>;
 
-    fn docs_uses(&self) -> Vec<DocsUse> {
-        Vec::new()
+    fn docs_uses(&self) -> Option<DocsUses> {
+        None
     }
 
     fn docs_mod() -> Option<DocsMod> {

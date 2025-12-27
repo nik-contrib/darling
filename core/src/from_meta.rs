@@ -13,7 +13,7 @@ use syn::{Expr, Lit, Meta};
 
 use crate::ast::NestedMeta;
 use crate::util::path_to_string;
-use crate::{DocsMod, Error, Result};
+use crate::{DocsMod, DocsUses, Error, Result};
 
 /// Create an instance from an item in an attribute declaration.
 ///
@@ -159,6 +159,10 @@ pub trait FromMeta: Sized {
     }
 
     fn docs_mods() -> Vec<DocsMod> {
+        Vec::new()
+    }
+
+    fn docs_uses(&self) -> Vec<DocsUses> {
         Vec::new()
     }
 }

@@ -220,7 +220,7 @@ impl<T> Fields<T> {
         self.style == Style::Tuple && self.len() == 1
     }
 
-    /// Returns the
+    /// Returns the inner value of a newtype, if it is one
     pub fn as_newtype(&self) -> Option<&T> {
         if !self.is_newtype() {
             return None;

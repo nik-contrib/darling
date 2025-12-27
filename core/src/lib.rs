@@ -12,7 +12,7 @@ mod macros_public;
 mod documented;
 
 pub use documented::DocsMod;
-pub use documented::DocsUse;
+pub use documented::DocsUses;
 
 pub mod ast;
 pub(crate) mod codegen;

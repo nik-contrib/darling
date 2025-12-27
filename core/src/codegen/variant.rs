@@ -47,6 +47,10 @@ impl<'a> Variant<'a> {
     pub fn as_docs_mod(&'a self) -> DocsMod<'a> {
         DocsMod(self)
     }
+
+    pub fn as_docs_uses(&'a self) -> DocsUses<'a> {
+        DocsUses(self)
+    }
 }
 
 impl UsesTypeParams for Variant<'_> {
@@ -250,31 +254,37 @@ impl ToTokens for DocsUses<'_> {
         }
 
         let name = &val.name_in_attr;
-        let docs = &val.docs;
-        let children = if val.data.is_empty() {
-            quote! { ::darling::export::Vec::new() }
+        let ident = &val.variant_ident;
+
+        let (destructure, children) = if val.data.is_empty() {
+            (quote! {}, quote! { ::darling::export::Vec::new() })
         } else if let Some(inner) = val.data.as_newtype() {
-            let ty = &inner.ty;
-            quote! { <#ty as ::darling::FromMeta>::docs_mods() }
+            let ty = inner.ty;
+            let ident = inner.ident;
+            (
+                quote! { (#ident) },
+                quote! { <#ty as ::darling::FromMeta>::docs_uses(&#ident) },
+            )
         } else if val.data.is_struct() {
+            let fields = val.data.iter().map(|field| &field.ident);
             let vdg = FieldsGen::new(&val.data, val.allow_unknown_fields);
-            let docs_mod = vdg.docs_mod();
-            quote! { ::darling::export::Vec::from([#docs_mod]) }
+            let docs_mod = vdg.docs_uses(true);
+            (
+                quote! { { #(#fields,)* } },
+                quote! { ::darling::export::Vec::from([#docs_mod]) },
+            )
         } else {
             unreachable!()
         };
 
         tokens.append_all(quote!(
-            ::darling::DocsMod {
-                docs: ::darling::export::Vec::from([
-                    #(::darling::export::String::from(#docs),)*
-                ]),
-                name: ::darling::export::syn::Ident::new(
+            Self::#ident #destructure => ::darling::export::Vec::from([::darling::DocsUses {
+                parent: ::darling::export::syn::Ident::new(
                     #name,
                     ::darling::export::Span::call_site()
                 ),
                 children: #children
-            },
+            }]),
         ));
     }
 }

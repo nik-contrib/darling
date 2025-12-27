@@ -109,7 +109,7 @@ impl ToTokens for FromDeriveInputImpl<'_> {
 
         let inits = self.base.initializers();
         let docs_mod = self.base.docs_mod();
-        let docs_uses = self.base.docs_uses(ty_ident);
+        let docs_uses = self.base.docs_uses();
         let default = if self.from_ident {
             quote!(let __default: Self = ::darling::export::From::from(#input.ident.clone());)
         } else {
@@ -164,10 +164,14 @@ impl ToTokens for FromDeriveInputImpl<'_> {
                     })
                 }
 
-                fn docs_uses(&self) -> ::darling::DocsUses {
-                    let mut docs_uses = ::darling::export::Vec::new(#ty_ident_string);
-                    #docs_uses
-                    docs_uses
+                fn docs_uses(&self) -> ::darling::export::Option<::darling::DocsUses> {
+                    ::darling::export::Some(::darling::DocsUses {
+                        parent: ::darling::export::syn::Ident::new(
+                            #ty_ident_string,
+                            ::darling::export::Span::call_site()
+                        ),
+                        children: ::darling::export::Vec::from([#docs_uses])
+                    })
                 }
             },
             tokens,
